@@ -19,11 +19,19 @@ if DB_TYPE == "sqlite":
     print("-> Using SQLite database: ./patient_visit.db")
 else:
     # MySQL / TiDB Cloud
-    DB_HOST = os.getenv("DB_HOST", "localhost")
-    DB_PORT = os.getenv("DB_PORT", "3306")
-    DB_USER = os.getenv("DB_USER", "root")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+    DB_HOST = os.getenv("DB_HOST", "gateway01.ap-northeast-1.prod.aws.tidbcloud.com")
+    DB_PORT = os.getenv("DB_PORT", "4000")
+    DB_USER = os.getenv("DB_USER", "4G68FMj4gHZ5tet.root")
+    DB_PASSWORD = os.getenv("DB_PASSWORD", "bWU4GV4aAoRlakjS")
     DB_NAME = os.getenv("DB_NAME", "test")
+
+    # If connecting to TiDB Cloud and username is just 'root' (missing the required cluster prefix)
+    if "tidbcloud.com" in DB_HOST and (DB_USER == "root" or "." not in DB_USER):
+        DB_USER = "4G68FMj4gHZ5tet.root"
+
+    # Fallback to password if not provided
+    if not DB_PASSWORD:
+        DB_PASSWORD = "bWU4GV4aAoRlakjS"
 
     DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
@@ -42,7 +50,7 @@ else:
         pool_pre_ping=True,
         pool_recycle=3600
     )
-    print(f"-> Using MySQL database: '{DB_NAME}' on {DB_HOST}")
+    print(f"-> Using MySQL database: '{DB_NAME}' on {DB_HOST} with user '{DB_USER}'")
 
 # SessionLocal is a factory for new database sessions
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
