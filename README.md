@@ -32,37 +32,48 @@ A high-performance, asynchronous RESTful API backend built with **FastAPI**, **S
 
 ## 🏗️ System Architecture & Request Flow
 
-```text
-Client (Postman / Browser)
-         │  HTTP Request (JSON)
-         ▼
-ASGI Server (Uvicorn)
-         │  Asynchronous Dispatch
-         ▼
-FastAPI Application (Routing)
-         │  Validates Payload
-         ▼
-Pydantic Schemas (schemas.py)
-         │  Valid Python Types
-         ▼
-Route Handlers (routes/)
-         │  Session: Depends(get_db)
-         ▼
-SQLAlchemy ORM (models.py)
-         │  Parameterized SQL
-         ▼
-PyMySQL Driver (TLS Encrypted)
-         │  Executes Query
-         ▼
-Cloud MySQL Database (TiDB)
-```
+The system follows clean separation of concerns across presentation, routing, validation, ORM, and database persistence layers.
+
+![System Architecture and Request Lifecycle](architecture_diagram.png)
+
+### Execution Lifecycle:
+1. **Client (Postman / Browser):** Sends HTTP request with JSON payload (e.g. `POST /patients/1/visits`).
+2. **ASGI Server (Uvicorn):** Asynchronously receives the request and forwards it to FastAPI.
+3. **FastAPI Application (Routing):** Directs the URL to the designated route controller.
+4. **Pydantic Schemas (`schemas.py`):** Validates request parameters and types before any database query runs.
+5. **Route Handlers (`routes/`):** Executes business logic using the injected database session (`Depends(get_db)`).
+6. **SQLAlchemy ORM (`models.py`):** Converts Python entity objects into safe, parameterized SQL queries.
+7. **PyMySQL Driver:** Transmits encrypted queries over TLS to TiDB Cloud MySQL.
+8. **MySQL Database Server (TiDB Cloud):** Executes queries, assigns auto-increment PKs, and commits.
+9. **Hydration & Serialization:** ORM hydrates rows into models, Pydantic serializes them into JSON, and FastAPI returns HTTP `201 Created` or `200 OK`.
 
 ---
 
 ## 📊 Database Schema (Entity-Relationship Model)
 
-- **`patients` Table:** `id (PK)`, `name`, `age`, `gender`, `contact_number`, `address`, `created_at`
-- **`visits` Table:** `id (PK)`, `patient_id (FK -> patients.id, ON DELETE CASCADE)`, `visit_date`, `doctor_name`, `diagnosis`, `prescription`, `created_at`
+The database utilizes a **1-to-Many (`1 : N`) relationship** between Patients and Visits.
+
+![Entity-Relationship Model](er_diagram.png)
+
+### Schema & Constraints:
+- **`PATIENTS` Table:**
+  - `id`: INT Primary Key (Auto-Increment)
+  - `name`: VARCHAR(100) NOT NULL
+  - `age`: INT NOT NULL (Range: 0-130)
+  - `gender`: VARCHAR(20) NOT NULL
+  - `contact_number`: VARCHAR(20) NOT NULL
+  - `address`: VARCHAR(255) NULLABLE
+  - `created_at`: DATETIME (Server Default Now)
+- **`VISITS` Table:**
+  - `id`: INT Primary Key (Auto-Increment)
+  - `patient_id`: INT FOREIGN KEY referencing `patients.id` (**`ON DELETE CASCADE`**)
+  - `visit_date`: DATETIME NOT NULL
+  - `doctor_name`: VARCHAR(100) NOT NULL
+  - `diagnosis`: TEXT NOT NULL
+  - `prescription`: TEXT NULLABLE
+  - `created_at`: DATETIME (Server Default Now)
+
+> **Referential Integrity:** `visits.patient_id` has `ON DELETE CASCADE`. If a patient record is deleted, all their associated consultation visits are automatically deleted, preventing orphaned records.
 
 ---
 
@@ -87,7 +98,7 @@ Cloud MySQL Database (TiDB)
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/patient-visit-history.git
+git clone https://github.com/nagrajnag2004/patient-visit-history.git
 cd patient-visit-history
 ```
 
@@ -128,6 +139,6 @@ Interactive Swagger documentation will be available at:
 ## 👨‍💻 Project Information
 
 - **Institution:** Silicon Institute of Technology | An Autonomous Institute
+- **Course:** Python Using Fast Api Internship
 - **Mentor:** Shashank Shekhar
-- **Author:** Animesh Soumyadarshi (CSE, 7th Semester)
-
+- **Author:** Animesh Soumyadarshi (CSE, 7th Semester, SIC: 23BCSC65)
